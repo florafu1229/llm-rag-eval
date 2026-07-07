@@ -22,7 +22,6 @@ from pathlib import Path
 
 import pytest
 
-from deepeval import assert_test
 from deepeval.metrics import (
     AnswerRelevancyMetric,
     FaithfulnessMetric,
@@ -82,6 +81,40 @@ def _metrics():
     return metrics
 
 
+def _print_case_details(test_case):
+    print("\n" + "=" * 80)
+    print("QUESTION")
+    print(test_case.input)
+    print("\nRETRIEVED CONTEXT")
+    for index, context in enumerate(test_case.retrieval_context, start=1):
+        print("\n--- context chunk {} ---".format(index))
+        print(context)
+    print("\nACTUAL ANSWER")
+    print(test_case.actual_output)
+    print("\nEXPECTED ANSWER")
+    print(test_case.expected_output)
+
+
+def _measure_and_print_metrics(test_case, metrics):
+    failures = []
+    print("\nMETRIC SCORES")
+    for metric in metrics:
+        metric.measure(test_case)
+        name = getattr(metric, "name", metric.__class__.__name__)
+        score = getattr(metric, "score", None)
+        threshold = getattr(metric, "threshold", None)
+        reason = getattr(metric, "reason", None)
+        is_successful = getattr(metric, "is_successful", None)
+        passed = is_successful() if callable(is_successful) else True
+        print("- {}: score={}, threshold={}, passed={}".format(name, score, threshold, passed))
+        if reason:
+            print("  reason: {}".format(reason))
+        if not passed:
+            failures.append(name)
+    if failures:
+        pytest.fail("Failed metrics: {}".format(", ".join(failures)))
+
+
 @pytest.mark.parametrize(
     "golden",
     _GOLDEN,
@@ -97,4 +130,5 @@ def test_rag_agent(golden):
         # HallucinationMetric compares against `context` (ground-truth docs).
         context=result.retrieval_context,
     )
-    assert_test(test_case, _metrics())
+    _print_case_details(test_case)
+    _measure_and_print_metrics(test_case, _metrics())
