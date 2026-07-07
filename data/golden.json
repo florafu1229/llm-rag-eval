@@ -1,0 +1,34 @@
+[
+  {
+    "input": "What is Kubernetes, and what is it commonly abbreviated as?",
+    "expected_output": "Kubernetes is an open-source platform for automating the deployment, scaling, and management of containerized applications. It is commonly abbreviated as K8s."
+  },
+  {
+    "input": "What are the two main parts of a Kubernetes cluster?",
+    "expected_output": "A Kubernetes cluster consists of a control plane, which manages the overall state of the cluster, and a set of worker nodes, which run the workloads."
+  },
+  {
+    "input": "What is etcd used for in the control plane?",
+    "expected_output": "etcd is a consistent and highly available key-value store used as the backing store for all cluster data."
+  },
+  {
+    "input": "What is the smallest deployable unit in Kubernetes, and what does it represent?",
+    "expected_output": "The Pod is the smallest deployable unit in Kubernetes. It represents one or more containers that share storage, network, and a specification for how to run them."
+  },
+  {
+    "input": "What is the default Service type in Kubernetes and how is it reachable?",
+    "expected_output": "The default Service type is ClusterIP. It exposes the Service on an internal cluster IP and is reachable only from within the cluster."
+  },
+  {
+    "input": "What is the difference between a liveness probe and a readiness probe?",
+    "expected_output": "A liveness probe determines whether a container is running; if it fails, the container is restarted. A readiness probe determines whether a container is ready to receive traffic; if it fails, the Pod is removed from the Service endpoints."
+  },
+  {
+    "input": "What is the difference between a ConfigMap and a Secret?",
+    "expected_output": "A ConfigMap stores non-confidential configuration data as key-value pairs, while a Secret stores sensitive data such as passwords, tokens, and keys. A Secret is intended for confidential information and is base64-encoded at rest."
+  },
+  {
+    "input": "What does a Deployment manage, and how does it relate to ReplicaSets and Pods?",
+    "expected_output": "A Deployment provides declarative updates for Pods and ReplicaSets, managing rolling updates and rollbacks. It creates and manages a ReplicaSet, which in turn manages the Pods."
+  }
+]

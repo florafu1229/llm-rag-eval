@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.deepeval/
+.deepeval-cache.json
+.pytest_cache/
+eval_run.log
+venv/
+.venv/
+*.egg-info/
