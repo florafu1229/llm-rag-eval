@@ -17,6 +17,12 @@ It demonstrates the skills an *AI / LLM Test Engineer* is hired for:
 - Detecting **hallucination**, measuring **faithfulness**, **relevancy**, and **correctness**
 - Running it as a **pytest / CI-friendly** suite against any OpenAI-compatible endpoint
 
+## 中文学习文档
+
+- [LLM 评测指标与 Golden Dataset 设计](docs/llm-evaluation-and-dataset-design.md)
+- [AI 测试与 RAG 评测面试故事](docs/interview-stories.md)
+- [项目框架与运行手册](docs/project-framework-and-runbook.md)
+
 ## What gets measured
 
 | Metric | Question it answers |
@@ -39,6 +45,7 @@ llm-rag-eval/
 │   └── llm.py                   # OpenAI-compatible client + DeepEval custom judge
 ├── tests/
 │   └── test_rag_eval.py         # DeepEval metric suite (one case per golden Q)
+├── docs/                        # Chinese learning notes, runbook, interview stories
 ├── run_demo.py                  # offline wiring check (no API key needed)
 ├── requirements.txt
 └── .env.example

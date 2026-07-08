@@ -48,6 +48,8 @@ _THRESHOLD = float(os.getenv("EVAL_THRESHOLD", "0.5"))
 # Local CPU judges are slow. By default we run a lean 2-metric set synchronously.
 # Set FULL_METRICS=1 to also run Faithfulness + Hallucination (slower).
 _FULL_METRICS = os.getenv("FULL_METRICS", "0") == "1"
+_REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
+_REPORTS = []
 
 
 def _metrics():
@@ -97,6 +99,7 @@ def _print_case_details(test_case):
 
 def _measure_and_print_metrics(test_case, metrics):
     failures = []
+    metric_results = []
     print("\nMETRIC SCORES")
     for metric in metrics:
         metric.measure(test_case)
@@ -106,13 +109,92 @@ def _measure_and_print_metrics(test_case, metrics):
         reason = getattr(metric, "reason", None)
         is_successful = getattr(metric, "is_successful", None)
         passed = is_successful() if callable(is_successful) else True
+        metric_results.append(
+            {
+                "name": name,
+                "score": score,
+                "threshold": threshold,
+                "passed": passed,
+                "reason": reason,
+            }
+        )
         print("- {}: score={}, threshold={}, passed={}".format(name, score, threshold, passed))
         if reason:
             print("  reason: {}".format(reason))
         if not passed:
             failures.append(name)
-    if failures:
-        pytest.fail("Failed metrics: {}".format(", ".join(failures)))
+    return metric_results, failures
+
+
+def _record_report(test_case, metric_results):
+    _REPORTS.append(
+        {
+            "question": test_case.input,
+            "retrieved_context": test_case.retrieval_context,
+            "actual_answer": test_case.actual_output,
+            "expected_answer": test_case.expected_output,
+            "metrics": metric_results,
+        }
+    )
+
+
+def _write_reports():
+    _REPORTS_DIR.mkdir(exist_ok=True)
+    json_path = _REPORTS_DIR / "rag_eval_report.json"
+    markdown_path = _REPORTS_DIR / "rag_eval_report.md"
+    json_path.write_text(json.dumps(_REPORTS, indent=2, ensure_ascii=False), encoding="utf-8")
+    markdown_path.write_text(_format_markdown_report(), encoding="utf-8")
+    print("\nEvaluation reports written:")
+    print("- {}".format(json_path))
+    print("- {}".format(markdown_path))
+
+
+def _format_markdown_report():
+    lines = ["# RAG Evaluation Report", ""]
+    lines.append("Total cases: {}".format(len(_REPORTS)))
+    lines.append("")
+    for index, report in enumerate(_REPORTS, start=1):
+        lines.append("## Case {}".format(index))
+        lines.append("")
+        lines.append("### Question")
+        lines.append(report["question"])
+        lines.append("")
+        lines.append("### Retrieved Context")
+        for context_index, context in enumerate(report["retrieved_context"], start=1):
+            lines.append("#### Context Chunk {}".format(context_index))
+            lines.append("```text")
+            lines.append(context)
+            lines.append("```")
+            lines.append("")
+        lines.append("### Actual Answer")
+        lines.append(report["actual_answer"])
+        lines.append("")
+        lines.append("### Expected Answer")
+        lines.append(report["expected_answer"])
+        lines.append("")
+        lines.append("### Metric Scores")
+        lines.append("| Metric | Score | Threshold | Passed |")
+        lines.append("|---|---:|---:|---|")
+        for metric in report["metrics"]:
+            lines.append(
+                "| {} | {} | {} | {} |".format(
+                    metric["name"],
+                    metric["score"],
+                    metric["threshold"],
+                    metric["passed"],
+                )
+            )
+        lines.append("")
+        for metric in report["metrics"]:
+            if metric["reason"]:
+                lines.append("**{} reason:** {}".format(metric["name"], metric["reason"]))
+                lines.append("")
+    return "\n".join(lines)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    if _REPORTS:
+        _write_reports()
 
 
 @pytest.mark.parametrize(
@@ -131,4 +213,7 @@ def test_rag_agent(golden):
         context=result.retrieval_context,
     )
     _print_case_details(test_case)
-    _measure_and_print_metrics(test_case, _metrics())
+    metric_results, failures = _measure_and_print_metrics(test_case, _metrics())
+    _record_report(test_case, metric_results)
+    if failures:
+        pytest.fail("Failed metrics: {}".format(", ".join(failures)))
